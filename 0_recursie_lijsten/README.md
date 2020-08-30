@@ -31,8 +31,10 @@ Fair, om de functie aan te roepen zul je een lijst mee moeten geven. Probeer nu
 
 Weer krijg je een fout van Haskell, maar nu is het een Exception (run-time fout). De functie `ex1` bevat een `undefined`. Dit is geen probleem, tot je de waarde ervan daadwerkelijk probeert op te vragen. Vul nu de functie in (gebruik eventueel de video van de les als voorbeeld), herlaad het bestand in de REPL en probeer het nog eens:
 
-> :r
-> ex1 [1,2,3]
+```
+:r
+ex1 [1,2,3]
+```
 
 Als het goed is krijg je nu de som, 6, terug.
 
@@ -45,9 +47,11 @@ Er zijn nog veel meer commando's mogelijk, maar dit is voor nu genoeg. Als je ee
 
 Kijk in GHCi nog even naar het type van `ex1`, `[1,2,3]` en `ex1 [1,2,3]`:
 
-> :t ex1
-> :t [1,2,3]
-> :t ex1 [1,2,3]
+```
+:t ex1
+:t [1,2,3]
+:t ex1 [1,2,3]
+```
 
 Merk op hoe Haskell omgaat met de types van functies: `ex1 :: [Int] -> Int` betekent dat ex1 een functie is die, gegeven een lijst van integers, een integer terug zal geven. Bij de aanroep wordt `[1,2,3]` ingevuld voor deze lijst, en is het resultaat een simpele `Int`. Merk ook op dat het type van de lijst `[1,2,3]` niet `[Int]` is, maar `Num a => [a]`. Dit komt omdat de lijst ook een lijst van komma-getallen (`Float`s) had kunnen zijn, bijvoorbeeld. Haskell heeft niet genoeg informatie en laat het voor nu even bij dat het getallen zijn (zoveel is duidelijk). Zodra je de lijst aan `ex1` geeft weet Haskell dat het de lijst als een lijst van integers moet zien om een kloppende functie-aanroep te kunnen doen. De notatie met de dubbele pijl kun je lezen als een voorwaarde: de lijst kan alles bevatten, zoalng het maar op een nummer lijkt. In een latere les zullen we hier meer van zien.
 Je kunt nu GHCi verlaten, of erbij houden terwijl je met de oefeningen aan de slag gaat. Bij Haskell programmeren wordt doorgaans geen gebruik gemaakt van een IDE, zoals je van andere talen misschien gewend bent, maar wordt de REPL vaak op eenzelfde manier ingezet.
