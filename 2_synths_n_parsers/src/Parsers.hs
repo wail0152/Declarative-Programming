@@ -41,12 +41,21 @@ pComplementCharSet cs = do input <- uncons <$> get
                               Nothing -> mzero
 
 -- TODO Schrijf een `Parser` `pString` die een gegegeven `String` probeert te parsen. Gebruik hiervoor `do` notatie; parse een enkele letter met `pCharSet` en parse de rest recursief met `pString`; combineer beide waarden weer voordat je deze `return`t. Vergeet niet een geval voor een lege `String`  te schrijven.
+-- | Als de invoer leeg is, retourneert deze als geslaagd
+-- | Anders wordt de parser `pCharSet` uitgevoerd, waarbij de" charSet "alleen het eerste teken is en waarbij de teruggezonden waarde wordt opgeslagen.
+-- | Vervolgens roept die zichzelf aan met de staart van de string als invoer, en slaat opnieuw de geretourneerde waarde op.
+-- | Tenslotte worden beide resultaten samen gevoegd en returned ze als de uiteindelijke waarde.
 pString :: String -> Parser String
-pString = undefined
+pString "" = return ""
+pString s = do h <- pCharSet [head s]
+               t <- pString $ tail s
+               return $ h:t
 
 -- TODO Schrijf een `Parser` `pOpttional` die gegeven een `Parser` optioneel maakt. Als de `Parser` slaagt wordt een `Just` value teruggegeven, zo niet wordt `Nothing` ge`return`ed. Je kunt hiervoor gebruik maken van `mplus` uit `Control.Monad`.
+-- | Geeft de construct Just aan de actie als die geslaagd is met de functie `<$>`
+-- | Anders zorgt de functie `mplus` ervoor dat de standaardwaarde (` Just Nothing`) wordt geretourneerd, dit zorgt ervoor dat de parser altijd slaagt
 pOptional :: Parser a -> Parser (Maybe a)
-pOptional = undefined
+pOptional pa = mplus (Just <$> pa) (return Nothing)
 
 pRepeatSepBy :: Parser a -> Parser b -> Parser [b]
 pRepeatSepBy sep p = (:) <$> p <*> mplus (sep *> pRepeatSepBy sep p) (return [])
@@ -57,15 +66,15 @@ pEmpty = return ()
 
 -- TODO Combineer `pRepeatSepBy` en `pEmpty` tot een `Parser` `pRepeat` die een enkele `Parser` herhaalt.
 pRepeat :: Parser a -> Parser [a]
--- pRepeat = (:) <$> pRepeatSepBy <*> pEmpty
-pRepeat = undefined
+pRepeat = pRepeatSepBy pEmpty
 
 numbers :: CharSet
 numbers = "0123456789"
 
 -- TODO Combineer `pRepeat` en `pCharSet` tot een `Parser` die een getal als `String` leest, en roep hier `read` op aan om een `Int` terug te geven.
+-- | Koppelt de functie read aan het resultaat van het herhalende parsen van een lijst met getallen, hierbij worden de cijfers gebrukt en wordt de int representatie geretourneerd.
 pNumber :: Parser Int
-pNumber = undefined
+pNumber = (pRepeat $ pCharSet numbers) >>= (return . read)
 
 pTone :: Parser Tone
 pTone = do tone <- tRead . toUpper <$> pCharSet "abcdefg"
@@ -83,8 +92,12 @@ pTone = do tone <- tRead . toUpper <$> pCharSet "abcdefg"
         tRead _   = error "Invalid note"
 
 -- TODO Schrijf een `Parser` `pOctave`. Je kunt `toEnum` gebruiken om een `Int` naar een `Octave` te casten.
+-- | Hier mappen we de toOctave naar de parser pNumber, 
+-- | bij de toOctave returnen we 'Nothing' als de Int kleiner is dan 0 of groter dan 9, anders retourneert het de bijbehorende `Octave`.
 pOctave :: Parser Octave
-pOctave = undefined
+pOctave = pNumber >>= toOctave
+  where toOctave n | n < 0 || n > 9 = mzero
+                   | otherwise = return $ toEnum n
 
 pDuration :: Parser Duration
 pDuration = do number <- pNumber
@@ -114,8 +127,11 @@ pComma = () <$ do _ <- pCharSet ","
                   pOptional (pCharSet " ")
 
 -- TODO Pas deze `Parser` aan zodat de de titel uit de RTTL string wordt gehaald en in de plaats van PLACEHOLDER wordt teruggegeven.
+-- | Parst de titel van een nummer, en ontleedt de elementen als volgt: {titel}: [] d = {duur}, [] o = {octaaf}, [] b = {bpm}: []
+-- | Hierbij is de titel een tekenreeks die niet het teken ':' bevat, de duur is een getal in de list [1,2,4,8,16,32]
+-- | Het octaaf is een getal van 0 tot 9 en de bpm is een getal. Tenslot worden deze waardes geretourneerd als een tupel.
 pHeader :: Parser (String, Duration, Octave, Beats)
-pHeader = do _ <- pRepeat (pComplementCharSet ":")
+pHeader = do title <- pRepeat (pComplementCharSet ":")
              _ <- pCharSet ":"
              _ <- pOptional (pCharSet " ")
              _ <- pString "d="
@@ -128,7 +144,7 @@ pHeader = do _ <- pRepeat (pComplementCharSet ":")
              bpm <- fromIntegral <$> pNumber
              _ <- pCharSet ":"
              _ <- pOptional (pCharSet " ")
-             return ("PLACEHOLDER", duration, octave, bpm)
+             return (title, duration, octave, bpm)
 
 pSeparator :: Parser ()
 pSeparator = () <$ foldl1 mplus [pString " ", pString ", ", pString ","]
@@ -139,5 +155,7 @@ pRTTL = do (t, d, o, b) <- pHeader
            return (t, notes, b)
 
 -- TODO Schrijf een functie `parse` die `pRTTL` aanroept. Bedenk hierbij dat een `Parser` eigenlijk niet meer is dan een `StateT` met een `Maybe` erin. 
+-- | Evalueert de parser met de gegeven `String` als de start state, en returned een tuple van waarden als het lukt en 'Nothing' als het mislukt.
+-- | De waardens zijn de titel van het nummer, een lijst met noten en het aantal slagen per minuut (bpmn).
 parse :: String -> Maybe (String, [Note], Beats)
-parse = undefined
+parse = evalStateT pRTTL
