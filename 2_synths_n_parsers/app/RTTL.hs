@@ -50,4 +50,4 @@ chooseInstrument 5 = Just twisted
 chooseInstrument 6 = Just bass
 chooseInstrument 7 = Just kick
 chooseInstrument 8 = Just noise
-chooseInstrument _ = Just defaultInstrument
+chooseInstrument _ = Nothing

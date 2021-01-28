@@ -26,6 +26,8 @@ pitchStandard :: Hz
 pitchStandard = 440.0
 
 -- TODO Maak een functie silence die een gegeven aantal seconden aan stilte genereert. Hiervoor kun je een lijst met het juiste aantal (`sampleRate * seconden`) keer `0.0` teruggeven, verpakt tot het `Sound`-datatype.
+-- | Eerst word een lijst gemaakt met de waarde 0.0(x) en de lengte `sampleRate * seconden`(n) maar omdat deze uitkomst een Float type is voeren we nog ceiling er op uit, 
+-- | replicate zorgt er dus voor dat je een lijst met waard x en lengte n kan maken, dit verpakken we tot de Sound type door er een Floatsound van te maken
 silence :: Seconds -> Sound
 silence s = floatSound $ replicate (ceiling $ sampleRate * s) 0.0
 
@@ -79,10 +81,14 @@ defaultInstrument :: Instrument
 defaultInstrument = modifyInstrument sine (attack <> release)
 
 -- TODO Maak een `Instrument` `defaultSquare` gebaseerd op de `squareWave`, gecombineerd met een `attack` en `release` `Modifier`.
+-- | Voegt de attack en release modifier samen (release op attack toepassen) en gebruikt dit als de modifier op de squareWave,
+-- | door het aan de modifyInstrument functie te voeren als input met de squareWave waaruit we de aangepast squarWave uitkrijgen(defaultSquare) 
 defaultSquare :: Instrument
 defaultSquare = modifyInstrument squareWave (attack <> release)
 
 -- TODO Maak een `Instrument` `defaultTrangle` gebaseerd op de `triangleWave`, gecombineerd met een `attack` en `release` `Modifier`.
+-- | Voegt de attack en release modifier samen (release op attack toepassen) en gebruikt dit als de modifier op de triangleWave,
+-- | door het aan de modifyInstrument functie te voeren als input met de triangleWave waaruit we de aangepast triangleWave uitkrijgen(defaultTriangle) 
 defaultTriangle :: Instrument
 defaultTriangle = modifyInstrument triangleWave (attack <> release)
 
@@ -93,6 +99,7 @@ twisted :: Instrument
 twisted = modifyInstrument sine (attack <> distort)
 
 -- TODO Maak een functie `pad` die een lijst noten "pad" met vooraf en achteraf quarter-note pauze. Deze wordt gebruikt in de `generateWave` functie om de WAV-export beter te laten klinken.
+-- | Voegt 2 Note's toe van type Pause Quarter waarin Quarter de Duration type, deze 2 worden aan de begin als head toegevoegd en aan het eind als een tail list met 1 element.
 pad :: [Note] -> [Note]
 pad notes = Pause Quarter : notes ++ [Pause Quarter]
 

@@ -31,6 +31,9 @@ pCharSet cs = do input <- uncons <$> get
                    Nothing -> mzero
 
 -- TODO Schrijf een `Parser` `pComplementCharSet` die een lijst van karakters meekrijgt (ook wel een `String`) en het eerste karakter parset wanneer dit niet in de meegegeven set karakters zit.
+-- | Eerst wordt de invoer opgehaald door get get en dan word daarvan de uncons gepakt, dit wordt met ehulp van <$> gedaan omdat het verpakt zit in een Maybe
+-- | Als het resultaat Nothing is return je mzero wat op Nothig neer komt, als het wel een waarde heeft check je of de head niet in de meegegeven karakterslijst zit
+-- | Dan zet je de tail in de monad en return je de head anders als die er wel in zit return je mzero
 pComplementCharSet :: CharSet -> Parser Char
 pComplementCharSet cs = do input <- uncons <$> get
                            case input of
@@ -39,14 +42,10 @@ pComplementCharSet cs = do input <- uncons <$> get
 
 -- TODO Schrijf een `Parser` `pString` die een gegegeven `String` probeert te parsen. Gebruik hiervoor `do` notatie; parse een enkele letter met `pCharSet` en parse de rest recursief met `pString`; combineer beide waarden weer voordat je deze `return`t. Vergeet niet een geval voor een lege `String`  te schrijven.
 pString :: String -> Parser String
-pString "" = return ""
-pString s = do h <- pCharSet s
-               t <- pString (tail s)
-               return $ [h] ++ t
+pString = undefined
 
 -- TODO Schrijf een `Parser` `pOpttional` die gegeven een `Parser` optioneel maakt. Als de `Parser` slaagt wordt een `Just` value teruggegeven, zo niet wordt `Nothing` ge`return`ed. Je kunt hiervoor gebruik maken van `mplus` uit `Control.Monad`.
 pOptional :: Parser a -> Parser (Maybe a)
--- pOptional p = mplus (get p) (return Nothing)
 pOptional = undefined
 
 pRepeatSepBy :: Parser a -> Parser b -> Parser [b]

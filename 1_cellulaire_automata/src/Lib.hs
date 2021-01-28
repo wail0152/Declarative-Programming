@@ -43,21 +43,23 @@ stringVoorbeeld = FocusList ["3","4","5"] ["2","1","0"]
 -- toList intVoorbeeld ~> [0,1,2,3,4,5]
 -- | Draait de backward van een focuslist om en voegt daarbij de forward list toe
 toList :: FocusList a -> [a]
-toList (FocusList fw bw) = (reverse bw) ++ fw
+toList (FocusList fw bw) = reverse bw ++ fw
 
 -- TODO Schrijf en documenteer een functie die een gewone lijst omzet in een focus-list. Omdat een gewone lijst geen focus heeft moeten we deze kiezen; dit is altijd het eerste element.
 -- | Dit maakt een nieuwe focuslist via een lijst waarbij de lijst de forward is bij de focuslist, dit zodat de focus op het 1ste element zit, de backwards blijft daardoor leeg 
-fromList :: [a] -> FocusList a
+fromList :: [a] -> FocusList a 
 fromList a =  FocusList a []
 
 -- | Move the focus one to the left
 goLeft :: FocusList a -> FocusList a
-goLeft (FocusList fw (f:bw)) = FocusList (f:fw) bw
+goLeft (FocusList fw []) = FocusList fw []
+goLeft (FocusList fw (bh:bt)) = FocusList (bh:fw) bt
 
 -- TODO Schrijf en documenteer zelf een functie goRight die de focuslist een plaats naar rechts opschuift.
 -- | Dit schuift de focus 1 plaats naar rechts door de focus(head van de forward list) als head te nemen voor de backwards list
 goRight :: FocusList a -> FocusList a
-goRight (FocusList (b:fw) bw) = FocusList fw (b:bw)
+goRight (FocusList [] bw) = FocusList [] bw
+goRight (FocusList (fh:ft) bw) = FocusList ft (fh:bw)
 
 -- TODO Schrijf en documenteer een functie leftMost die de focus geheel naar links opschuift.
 -- | Dit schuift de focus compleet naar links door de backward list om te draaien om het in forward formaat te krijgen en vervolgens daarbij de forward list op te tellen en dat geheel dan als de forward list te gebruiken van een nieuwe FocusList
@@ -80,13 +82,13 @@ rightMost (FocusList fw bw) = FocusList [last fw] (reverse (init fw) ++ bw)
 -- [⟨░⟩, ▓, ▓, ▓, ▓, ░]  ⤚goLeft→ [⟨░⟩, ░, ▓, ▓, ▓, ▓, ░]
 -- | Dit schuift de focus door naar links zoals net maar nu heb je een extra case voor als er bij de backward geen elementen meer zijn dan zet je de mempty element als de backward
 totalLeft :: (Eq a, Monoid a) => FocusList a -> FocusList a
-totalLeft (FocusList fw []) = FocusList fw mempty
-totalLeft (FocusList fw (f:bw)) = FocusList (f:fw) bw
+totalLeft (FocusList fw []) = goLeft (FocusList fw mempty)
+totalLeft (FocusList fw bw) = goLeft (FocusList fw bw)
 
 -- | Dit schuift de focus door naar rechts zoals net maar nu heb je een extra case voor als er bij de forward geen elementen meer zijn dan zet je de mempty element als de forward
 totalRight :: (Eq a, Monoid a) => FocusList a -> FocusList a
-totalRight (FocusList [] bw) = FocusList mempty bw
-totalRight (FocusList (b:fw) bw) = FocusList fw (b:bw)
+totalRight (FocusList [] bw) = goRight (FocusList mempty bw)
+totalRight (FocusList fw bw) = goRight (FocusList fw bw)
 
 -- TODO In de colleges hebben we kennis gemaakt met een aantal hogere-orde functies zoals `map`, `zipWith` en `fold[r/l]`. Hier zullen we equivalenten voor de FocusList opstellen.
 -- De functies mapFocusList werkt zoals je zou verwachten: de functie wordt op ieder element toegepast, voor, op en na de focus. Je mag hier gewoon map voor gebruiken
@@ -104,7 +106,9 @@ mapFocusList f (FocusList fw bw) = FocusList (map f fw) (map f bw)
 -- links/rechts doorgevoerd, waarbij gestopt wordt zodra een van beide uiteinden leeg is. Dit laatste is net als bij de gewone zipWith, die je hier ook voor mag gebruiken.
 
 zipFocusListWith :: (a -> b -> c) -> FocusList a -> FocusList b -> FocusList c
-zipFocusListWith f (FocusList (f1:fw1) bw1) (FocusList (f2:fw2) bw2) = FocusList ((f f1 f2):zipWith f fw1 fw2) (zipWith f bw1 bw2)
+zipFocusListWith f (FocusList fw1 bw1) (FocusList fw2 bw2) = FocusList (zipWith f fw1 fw2) (zipWith f bw1 bw2)
+
+
 -- TODO Het folden van een FocusList vergt de meeste toelichting: waar we met een normale lijst met een left fold en een right fold te maken hebben, moeten we hier vanuit de focus werken.
 -- Vanuit de focus worden de elementen van rechts steeds gecombineerd tot een nieuw element, vanuit het element voor de focus gebeurt hetzelfde vanuit links. De twee resultaten van
 -- beide sublijsten (begin tot aan focus, focus tot en met eind) worden vervolgens nog een keer met de meegegeven functie gecombineerd. Hieronder een paar voorbeelden:
@@ -184,7 +188,7 @@ takeAtLeast n def (x:xs) = x : (takeAtLeast (n-1) def xs)
 -- TODO Schrijf en documenteer een functie context die met behulp van takeAtLeast de context van de focus-cel in een Automaton teruggeeft. Niet-gedefinieerde cellen zijn per definitie Dead.
 -- | Geeft 3 cellen terug met de focus list en de omringende cellen en als er geen omringende cellen zijn kan je het als een dead cell zien
 context :: Automaton -> Context
-context (FocusList (f:fw) b) = takeAtLeast 3 Dead [safeHead Dead b, f, safeHead Dead fw]
+context (FocusList fw bw) = takeAtLeast 1 Dead bw ++ takeAtLeast 2 Dead fw
 
 -- TODO Schrijf en documenteer een functie expand die een Automaton uitbreid met een dode cel aan beide uiteindes. We doen voor deze simulatie de aanname dat de "known universe"
 -- iedere ronde met 1 uitbreid naar zowel links als rechts.
@@ -199,6 +203,9 @@ type TimeSeries = [Automaton]
 -- de hogere-orde functies die we in de les hebben gezien? Waarom wel/niet?
 
 -- | Iterate a given rule @n@ times, given a start state. The result will be a sequence of states from start to @n@.
+-- | Eerst wordt er een dode cell aan het einde van de forward en backward list toegevoegt van de automaton vervolgens pak je het meest linker element en pas je de gegeven regel toe
+-- | De gegevem regel pas je toe door ... 
+-- | Vervolgens zet je het om naar ene focuslist en doet dit voor n keer en voeg je het aan de automaton aan toe
 -- | Breid de meegegeven automaton uit gaat voledig naar links en voert op elke cell beginnend van links en naar rechts werkend de rule uit en als de n op 0 is geeft die de meegegeven automaton terug.
 iterateRule :: Rule          -- ^ The rule to apply
             -> Int           -- ^ How many times to apply the rule
@@ -283,8 +290,6 @@ binary = map toEnum . reverse . take 8 . (++ repeat 0)
 mask :: [Bool] -> [a] -> [a]
 mask (x:xs) (y:ys) | x = y : mask xs ys
                    | not x = mask xs ys
-mask [x] [y] | x = [y]
-             | not x = []
 mask _ _ = []
 
 -- TODO Combineer `mask` en `binary` met de library functie `elem` en de eerder geschreven `inputs` tot een rule functie. Denk eraan dat het type Rule een short-hand is voor een
